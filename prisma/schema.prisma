@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum QuizType {
+  MCQ
+  DESCRIPTIVE
+  MIXED
+}
+
+enum QuizStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+}
+
+enum QuestionType {
+  MCQ
+  DESCRIPTIVE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(STUDENT)
+  department   String?
+  rollNumber   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  knowledgeBases KnowledgeBase[]
+  quizzes        Quiz[]
+  attempts       QuizAttempt[]
+  enrollments    QuizEnrollment[]
+}
+
+model KnowledgeBase {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  content     String   @db.Text
+  topics      String[]
+  adminId     String
+  admin       User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quizzes Quiz[]
+}
+
+model Quiz {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?    @db.Text
+  type            QuizType   @default(MCQ)
+  status          QuizStatus @default(DRAFT)
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  adminId         String
+  admin           User       @relation(fields: [adminId], references: [id])
+  scheduledAt     DateTime?
+  duration        Int        @default(30)
+  totalMarks      Int        @default(0)
+  passingMarks    Int        @default(0)
+  instructions    String?    @db.Text
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  questions   Question[]
+  attempts    QuizAttempt[]
+  enrollments QuizEnrollment[]
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  quizId        String
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text          String       @db.Text
+  type          QuestionType
+  options       Json?
+  correctAnswer String?
+  explanation   String?      @db.Text
+  marks         Int          @default(1)
+  order         Int          @default(0)
+  topic         String?
+  createdAt     DateTime     @default(now())
+
+  answers Answer[]
+}
+
+model QuizEnrollment {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  @@unique([studentId, quizId])
+}
+
+model QuizAttempt {
+  id          String        @id @default(cuid())
+  quizId      String
+  quiz        Quiz          @relation(fields: [quizId], references: [id])
+  studentId   String
+  student     User          @relation(fields: [studentId], references: [id])
+  startedAt   DateTime      @default(now())
+  submittedAt DateTime?
+  score       Float?
+  totalMarks  Int
+  percentage  Float?
+  status      AttemptStatus @default(IN_PROGRESS)
+  timeTaken   Int?
+  createdAt   DateTime      @default(now())
+
+  answers Answer[]
+  report  AssessmentReport?
+}
+
+model Answer {
+  id                String      @id @default(cuid())
+  attemptId         String
+  attempt           QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId        String
+  question          Question    @relation(fields: [questionId], references: [id])
+  selectedOption    String?
+  descriptiveAnswer String?     @db.Text
+  marksAwarded      Float?
+  aiEvaluation      String?     @db.Text
+  isCorrect         Boolean?
+  createdAt         DateTime    @default(now())
+
+  @@unique([attemptId, questionId])
+}
+
+model AssessmentReport {
+  id                 String      @id @default(cuid())
+  attemptId          String      @unique
+  attempt            QuizAttempt @relation(fields: [attemptId], references: [id])
+  studentId          String
+  quizId             String
+  overallScore       Float
+  percentage         Float
+  grade              String
+  summary            String      @db.Text
+  strengths          String[]
+  weaknesses         String[]
+  recommendations    String[]
+  topicAnalysis      Json
+  placementReadiness Int
+  generatedAt        DateTime    @default(now())
+}
