@@ -1,124 +1,132 @@
-# PlacePrep — AI-Powered Placement Assessment Platform
+# AssessHub — AI-Powered Student Assessment Platform
 
-A full-stack assessment platform that generates quizzes from knowledge bases using Claude AI, evaluates answers automatically, and provides detailed placement readiness reports.
+> One platform for **all types of student assessments** — academic exams, placement preparation, competitive test practice, and skill evaluations.
+
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://typescriptlang.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://postgresql.org)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748)](https://prisma.io)
+[![Claude AI](https://img.shields.io/badge/Claude-AI-orange)](https://anthropic.com)
+
+---
+
+## What It Does
+
+AssessHub lets teachers/admins build a **knowledge base** (paste notes, textbook chapters, course material), then have **Claude AI automatically generate quizzes** from that content. Students take the quiz with a live timer, and the platform instantly **evaluates MCQs and AI-grades descriptive answers**, then generates a comprehensive **assessment report** with topic-wise analysis, grade, readiness score, strengths, weaknesses, and personalised recommendations.
+
+### Use Cases
+| Type | Examples |
+|---|---|
+| Academic | Mid-terms, end-sems, unit tests, lab vivas |
+| Placement Prep | Aptitude, DSA, core subjects, HR rounds |
+| Competitive | GATE, GRE, UPSC, JEE mock tests |
+| Skill | Coding, design, soft skills, domain knowledge |
+
+---
 
 ## Features
 
-- **AI Question Generation** — Claude AI generates MCQ and descriptive questions from your knowledge base
-- **Dual Quiz Types** — MCQ (auto-graded), Descriptive (AI-evaluated), or Mixed
-- **Quiz Scheduling** — Schedule quizzes for future dates
-- **Timed Assessments** — Countdown timer with auto-submit
-- **AI Evaluation** — Descriptive answers are evaluated by Claude with detailed feedback
-- **Smart Reports** — Topic-wise analysis, grade, placement readiness score, and recommendations
-- **Admin Dashboard** — Manage knowledge bases, quizzes, and view all student performance
-- **Student Dashboard** — Track progress, attempt quizzes, view reports
+- **AI Question Generation** — Claude generates MCQ and/or descriptive questions from any knowledge base
+- **Two Question Types** — MCQ (auto-graded) and Descriptive (AI-evaluated with detailed feedback)
+- **Timed Quizzes** — Countdown timer, auto-submit on expiry, answer auto-saved
+- **Quiz Scheduling** — Set a future date/time; quiz activates automatically
+- **Smart Reports** — Score, grade, topic-wise radar chart, placement/readiness %, strengths, weaknesses, recommendations
+- **Admin Dashboard** — Manage knowledge bases, quizzes, view all student performance & analytics
+- **Student Dashboard** — Attempt quizzes, track progress over time, view all reports
+- **Role-based Access** — Separate flows for Admin and Student with JWT auth
+
+---
 
 ## Tech Stack
 
-- **Frontend/Backend**: Next.js 14 (App Router) + TypeScript
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: NextAuth.js
-- **AI**: Anthropic Claude API (question generation + answer evaluation)
-- **Charts**: Recharts
-- **Styling**: Tailwind CSS
-- **Deployment**: Docker + docker-compose
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) + TypeScript |
+| Database | PostgreSQL 16 + Prisma ORM |
+| Auth | NextAuth.js (JWT strategy) |
+| AI | Anthropic Claude API |
+| Charts | Recharts |
+| Styling | Tailwind CSS |
+| Deployment | Docker + docker-compose |
+
+### Software Design (SOLID / DRY)
+
+| File | Principle |
+|---|---|
+| `src/lib/api-response.ts` | Single source for all HTTP response helpers |
+| `src/lib/auth-guard.ts` | Single source for auth & role enforcement |
+| `src/lib/route-handler.ts` | Open/Closed — wraps any handler with error boundaries |
+| `src/lib/scoring.ts` | Pure function, no side-effects, fully testable |
+| `src/lib/anthropic.ts` | Interface Segregation — separate functions per AI task |
 
 ---
 
-## Quick Start
+## Quick Start (Local Development)
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 14+ running locally
 
 ### 1. Clone & Install
-
 ```bash
-cd placement-assessment-platform
-npm install
+git clone https://github.com/shwetacse/assessment-platform.git
+cd assessment-platform
+npm install --legacy-peer-deps
 ```
 
-### 2. Environment Setup
-
+### 2. Environment Variables
 ```bash
 cp .env.example .env.local
 ```
-
 Edit `.env.local`:
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/placement_platform"
-NEXTAUTH_SECRET="your-random-secret-here"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/assessment_platform"
+NEXTAUTH_SECRET="any-random-32-char-string"
 NEXTAUTH_URL="http://localhost:3000"
 ANTHROPIC_API_KEY="sk-ant-your-key-here"
 ```
+Get your Claude API key at: https://console.anthropic.com
 
 ### 3. Database Setup
-
 ```bash
-# Push schema to database
-npm run db:push
-
-# Seed with demo data
-npm run db:seed
+npm run db:push      # create tables
+npm run db:seed      # load demo admin + student + sample quiz
 ```
 
-### 4. Run Development Server
-
+### 4. Run
 ```bash
 npm run dev
 ```
+Open http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000)
-
-**Demo Credentials:**
-- Admin: `admin@placeprep.com` / `admin123`
-- Student: `student@placeprep.com` / `student123`
+**Demo accounts (created by seed):**
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@placeprep.com | admin123 |
+| Student | student@placeprep.com | student123 |
 
 ---
 
-## Docker Deployment
+## Docker Deployment (Production)
 
-### 1. Set Environment Variables
-
+### 1. Set secrets
 ```bash
 cp .env.example .env
-# Edit .env with your values
+# Fill in ANTHROPIC_API_KEY and set a strong NEXTAUTH_SECRET
 ```
 
-### 2. Build and Run
-
+### 2. Build & start
 ```bash
-# Start database + app
-docker-compose up -d
-
-# First time: run migrations + seed
-docker-compose --profile setup run migrate
+docker-compose up -d --build
 ```
 
-### 3. Access
+### 3. First-time database setup
+```bash
+docker-compose exec app npx prisma db push
+docker-compose exec app npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
+```
 
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
-## Admin Workflow
-
-1. **Register/Login** as Admin
-2. Go to **Knowledge Base** → Add study material (paste notes/textbook content)
-3. Go to **Quizzes** → Create new quiz, select knowledge base, set type (MCQ/Descriptive/Mixed)
-4. **Generate Questions** with AI — Claude generates questions automatically
-5. **Schedule** the quiz or publish immediately
-6. Students see active quizzes, attempt them, get instant AI-evaluated reports
-7. Admin sees all performance in **Analytics** tab
-
-## Student Workflow
-
-1. **Register/Login** as Student
-2. **Dashboard** shows available quizzes and performance trends
-3. Click **Start Quiz** → read instructions → timer begins
-4. Answer MCQ/Descriptive questions, auto-saved
-5. Submit → AI evaluates descriptive answers
-6. View detailed **Assessment Report** with:
-   - Score, grade, placement readiness %
-   - Topic-wise performance radar chart
-   - Strengths, weaknesses, recommendations
-   - Answer review with AI feedback
+App will be live at http://localhost:3000
 
 ---
 
@@ -127,32 +135,50 @@ Open [http://localhost:3000](http://localhost:3000)
 ```
 src/
 ├── app/
-│   ├── (auth)/login, register     # Auth pages
-│   ├── admin/                     # Admin pages
-│   ├── student/                   # Student pages  
+│   ├── (auth)/login, register     # Public auth pages
+│   ├── admin/                     # Admin-only pages (dashboard, KB, quizzes, students, analytics)
+│   ├── student/                   # Student-only pages (dashboard, quiz-taking, reports)
 │   └── api/                       # REST API routes
+│       ├── auth/                  # NextAuth handler
+│       ├── register/              # User registration
+│       ├── knowledge-base/        # CRUD for knowledge bases
+│       ├── quizzes/               # CRUD + AI generation + enroll
+│       ├── attempts/              # Start / save-answer / submit
+│       ├── reports/               # Fetch assessment reports
+│       └── admin/                 # Admin stats & student list
 ├── components/
-│   ├── ui/                        # Reusable UI components
-│   ├── layout/                    # Sidebars
-│   └── charts/                    # Recharts components
+│   ├── ui/                        # Button, Card, Badge, Input, Modal, Progress, Spinner
+│   ├── layout/                    # AdminSidebar, StudentSidebar
+│   └── charts/                   # PerformanceLineChart, TopicRadarChart
 └── lib/
-    ├── auth.ts                    # NextAuth config
-    ├── db.ts                      # Prisma client
-    ├── anthropic.ts               # Claude AI functions
-    └── utils.ts                   # Utilities
+    ├── auth.ts                    # NextAuth configuration
+    ├── auth-guard.ts              # requireAuth / requireAdmin / requireStudent
+    ├── api-response.ts            # ok / created / unauthorized / notFound / …
+    ├── route-handler.ts           # withErrorHandling HOF
+    ├── anthropic.ts               # generateQuestions / evaluateAnswer / generateReport
+    ├── scoring.ts                 # buildTopicAnalysis (pure function)
+    ├── db.ts                      # Prisma singleton
+    └── utils.ts                   # formatDate / getGrade / cn / …
 ```
 
-## API Routes
+## API Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/register` | Register new user |
-| GET/POST | `/api/knowledge-base` | List/Create knowledge bases |
-| GET/POST | `/api/quizzes` | List/Create quizzes |
-| POST | `/api/quizzes/[id]/generate` | AI question generation |
-| POST | `/api/attempts` | Start quiz attempt |
-| PATCH | `/api/attempts/[id]` | Save answer |
-| POST | `/api/attempts/[id]/submit` | Submit & evaluate |
-| GET | `/api/reports/[id]` | Get assessment report |
-| GET | `/api/admin/stats` | Admin dashboard stats |
-| GET | `/api/admin/students` | All students performance |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/register` | Public | Register new user |
+| GET | `/api/knowledge-base` | Any | List knowledge bases |
+| POST | `/api/knowledge-base` | Admin | Create knowledge base |
+| GET | `/api/quizzes` | Any | List quizzes |
+| POST | `/api/quizzes` | Admin | Create quiz |
+| POST | `/api/quizzes/[id]/generate` | Admin | AI-generate questions |
+| POST | `/api/attempts` | Student | Start quiz attempt |
+| PATCH | `/api/attempts/[id]` | Student | Save answer |
+| POST | `/api/attempts/[id]/submit` | Student | Submit & evaluate |
+| GET | `/api/reports/[id]` | Any | Get assessment report |
+| GET | `/api/admin/stats` | Admin | Dashboard statistics |
+| GET | `/api/admin/students` | Admin | All students + performance |
+
+---
+
+## License
+MIT

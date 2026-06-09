@@ -6,8 +6,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'PlacePrep – Placement Assessment Platform',
-  description: 'AI-powered quiz and assessment platform to make students placement ready',
+  title: 'AssessHub – Student Assessment Platform',
+  description: 'AI-powered quiz and assessment platform for all types of student evaluation — academic, skill, placement, and competitive.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
